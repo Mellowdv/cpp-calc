@@ -73,6 +73,7 @@ double primary()
         ts.symbol = Token(input);
         return value;
     }
+    return value;
 }
 
 double evaluate()
@@ -84,7 +85,7 @@ double evaluate()
 
     if (ts.symbol.type == number)
         lhs = primary();
-    else if (ts.symbol.type == ';')
+    if (ts.symbol.type == ';')
         return lhs;
     if (ts.symbol.type == '+')
     {
