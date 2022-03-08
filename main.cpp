@@ -3,26 +3,14 @@
 
 const char number = '8';
 
-
 class Token
 {
-private:
+public:
     char type;
     int value;
-public:
     Token(char new_type, int new_value) : type(new_type), value(new_value) {}
     Token(char new_type) : type(new_type), value(0) {}
     Token() {}
-
-    char get_type()
-    {
-        return type;
-    }
-
-    int get_value()
-    {
-        return value;
-    }
 
     void display_token()
     {
@@ -35,18 +23,8 @@ public:
 
 class TokenStream
 {
-private:
-    Token symbol;
 public:
-    void set_symbol(Token new_symbol)
-    {
-        symbol = new_symbol;
-    }
-
-    Token get_symbol()
-    {
-        return symbol;
-    }
+    Token symbol;
 };
 
 TokenStream ts;
@@ -73,43 +51,65 @@ Token create_token(char input)
     return symbol;
 }
 
-double evaluate()
+double evaluate();
+
+double primary()
 {
-    Token current_token = ts.get_symbol();
-    Token next_token;
     char input;
-    if (current_token.get_type() == number)
+    std::cin >> input;
+    double value;
+    Token tok;
+
+    value = ts.symbol.value;
+
+    if (isdigit(input))
     {
-        std::cin >> input;
-        next_token = create_token(input);
-        ts.set_symbol(next_token);
-        evaluate();
-        return 0;
+        ts.symbol.value = value*10 + (int(input) - 48);
+        primary();
     }
     else
     {
-        std::cout << "\nI found a non-number!";
-        return 0;
+        value = ts.symbol.value;
+        ts.symbol = Token(input);
+        return value;
     }
 }
 
-double add_subtract()
+double evaluate()
 {
-    
+    char input;
+    double lhs;
+
+    Token tok;
+
+    if (ts.symbol.type == number)
+        lhs = primary();
+    else if (ts.symbol.type == ';')
+        return lhs;
+    if (ts.symbol.type == '+')
+    {
+        std::cin >> input;
+        ts.symbol = create_token(input);
+        lhs = lhs + primary();
+        return lhs + evaluate();
+    }
+    return lhs;
 }
 
 int main()
 {
     char input;
-    Token test;
+    Token empty(' ');
+    Token tok;
+    double result;
 
     while (std::cin >> input)
     {
+        tok = create_token(input);
+        ts.symbol = tok;
         if (input == 'q')
             break;
-        test = create_token(input);
-        ts.set_symbol(test);
-        evaluate();
+        std::cout << evaluate();
     }
     return 0;
 }

@@ -1,10 +1,10 @@
 ########################################################
-#						       #
-#						       #
+#						       						   #
+#						       						   #
 #   This is going to be a calculator project using     #
-#   basic lexical analysis			       #
-#						       #
-#						       #
+#   basic lexical analysis			       			   #
+#						       						   #
+#						       						   #
 ########################################################
 
 The basic grammar:
@@ -18,11 +18,11 @@ More advanced:
 		numbers, ()
 	2. Terms:
 		primary
-		primary '*' term
-		primary '/' term
+		term '*' term
+		term '/' term
 	3. Expressions:
 		term
-		term '+' expression
-		term '-' expression
+		expression '+' expression
+		expression '-' expression
 		
 		
