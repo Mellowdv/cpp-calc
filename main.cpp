@@ -1,7 +1,12 @@
 #include <iostream>
 #include <string>
 
+double primary();
+double first_order();
+double second_order();
+
 const char number = '8';
+const char print = '=';
 
 class Token
 {
@@ -29,70 +34,100 @@ public:
 
 TokenStream ts;
 
-Token create_token(char input)
+Token create_token()
 {
-    Token symbol;
+    char input;
+    std::cin >> input;
     switch (input)
     {
         case '0': case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':
         {
-            symbol = Token(number, (int(input)-48));
+            return Token(number, (int(input)-48));
             break;
         }
         case '+': case '-': case '*': case '/': case '(': case ')':
         {
-            symbol = Token(input);
+            return Token(input, ts.symbol.value);
             break;
+        }
+        case '=':
+            return Token(print, ts.symbol.value);
+        case 'q':
+        {
+            return Token(input);
         }
         default:
             break;
-    } 
-    return symbol;
+    }
+    return Token(input);
 }
 
-double evaluate();
+void char_to_num()
+{
+    double value;
+
+    value = ts.symbol.value;
+    ts.symbol = create_token();
+
+    if (ts.symbol.type == number)
+    {
+        ts.symbol.value = value*10 + (ts.symbol.value);
+        char_to_num();
+    }
+    return;
+}
 
 double primary()
 {
-    char input;
-    std::cin >> input;
-    double value;
-    Token tok;
+    double result;
+    if (ts.symbol.type == print)
+        return ts.symbol.value;
 
-    value = ts.symbol.value;
-
-    if (isdigit(input))
-    {
-        ts.symbol.value = value*10 + (int(input) - 48);
-        primary();
-    }
-    else
-    {
-        value = ts.symbol.value;
-        ts.symbol = Token(input);
-        return value;
-    }
-    return value;
+    char_to_num();
+    result = first_order();
+    return result;
 }
 
-double evaluate()
+// this function evaluates the first order ops, * and /
+double first_order()
 {
-    char input;
-    double lhs;
+    double result;
+    double lhs = ts.symbol.value;
 
-    Token tok;
+    if (ts.symbol.type == '*')
+    {
+        ts.symbol = create_token();
+        char_to_num();
+        result = lhs * ts.symbol.value;
+        return result;
+    }
+    else if (ts.symbol.type == '/')
+    {
+        ts.symbol = create_token();
+        char_to_num();
+        return lhs / ts.symbol.value;
+    }
+    return second_order();
+}
 
-    if (ts.symbol.type == number)
-        lhs = primary();
-    if (ts.symbol.type == ';')
-        return lhs;
+double second_order()
+{
+    double lhs = ts.symbol.value;
+    double result;
+
     if (ts.symbol.type == '+')
     {
-        std::cin >> input;
-        ts.symbol = create_token(input);
-        lhs = lhs + primary();
-        return lhs + evaluate();
+        ts.symbol = create_token();
+        char_to_num();
+        result = lhs + first_order();
+        return result;
+    }
+    if (ts.symbol.type == '-')
+    {
+        ts.symbol = create_token();
+        char_to_num();
+        return lhs - first_order();
     }
     return lhs;
 }
@@ -100,17 +135,13 @@ double evaluate()
 int main()
 {
     char input;
-    Token empty(' ');
-    Token tok;
     double result;
 
-    while (std::cin >> input)
+    while (ts.symbol.type != 'q')
     {
-        tok = create_token(input);
-        ts.symbol = tok;
-        if (input == 'q')
-            break;
-        std::cout << evaluate();
+        ts.symbol = create_token();
+        primary();
+        std::cout << first_order() << std::endl;
     }
     return 0;
 }
