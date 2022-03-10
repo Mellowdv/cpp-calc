@@ -12,8 +12,8 @@ class Token
 {
 public:
     char type;
-    int value;
-    Token(char new_type, int new_value) : type(new_type), value(new_value) {}
+    double value;
+    Token(char new_type, double new_value) : type(new_type), value(new_value) {}
     Token(char new_type) : type(new_type), value(0) {}
     Token() {}
 
@@ -67,6 +67,9 @@ void char_to_num()
 {
     double value;
 
+    if (ts.symbol.type == '=')
+        return;
+
     value = ts.symbol.value;
     ts.symbol = create_token();
 
@@ -80,13 +83,8 @@ void char_to_num()
 
 double primary()
 {
-    double result;
-    if (ts.symbol.type == print)
-        return ts.symbol.value;
-
     char_to_num();
-    result = first_order();
-    return result;
+    return ts.symbol.value;
 }
 
 // this function evaluates the first order ops, * and /
@@ -100,6 +98,7 @@ double first_order()
         ts.symbol = create_token();
         char_to_num();
         result = lhs * ts.symbol.value;
+        ts.symbol.value = result;
         return result;
     }
     else if (ts.symbol.type == '/')
@@ -120,16 +119,38 @@ double second_order()
     {
         ts.symbol = create_token();
         char_to_num();
+        if (ts.symbol.type == '+' || ts.symbol.type == '-')
+        {
+            ts.symbol.value = lhs + ts.symbol.value;
+            return ts.symbol.value;
+        }
         result = lhs + first_order();
+        ts.symbol.value = result;
         return result;
     }
     if (ts.symbol.type == '-')
     {
         ts.symbol = create_token();
         char_to_num();
-        return lhs - first_order();
+        if (ts.symbol.type == '+' || ts.symbol.type == '-')
+        {
+            ts.symbol.value = lhs - ts.symbol.value;
+            return ts.symbol.value;
+        }
+        ts.symbol.value = lhs - first_order();
+        return ts.symbol.value;
     }
-    return lhs;
+    return primary();
+}
+
+double evaluate()
+{
+    double result;
+    while (ts.symbol.type != '=' && ts.symbol.type != 'q')
+    {
+        result = first_order();
+    }
+    return result;
 }
 
 int main()
@@ -137,11 +158,13 @@ int main()
     char input;
     double result;
 
-    while (ts.symbol.type != 'q')
+    while (true)
     {
         ts.symbol = create_token();
-        primary();
-        std::cout << first_order() << std::endl;
+        result = evaluate();
+        if (ts.symbol.type == 'q')
+            break;
+        std::cout << result << std::endl;
     }
     return 0;
 }
