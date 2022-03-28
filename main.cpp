@@ -37,13 +37,17 @@ TokenStream ts;
 Token create_token()
 {
     char input;
+    double val;
     std::cin >> input;
+
     switch (input)
     {
         case '0': case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':
         {
-            return Token(number, (int(input)-48));
+            std::cin.putback(input);
+            std::cin >> val;
+            return Token(number, val);
             break;
         }
         case '+': case '-': case '*': case '/': case '(': case ')':
@@ -63,94 +67,64 @@ Token create_token()
     return Token(input);
 }
 
-void char_to_num()
-{
-    double value;
-
-    if (ts.symbol.type == '=')
-        return;
-
-    value = ts.symbol.value;
-    ts.symbol = create_token();
-
-    if (ts.symbol.type == number)
-    {
-        ts.symbol.value = value*10 + (ts.symbol.value);
-        char_to_num();
-    }
-    return;
-}
-
 double primary()
 {
-    char_to_num();
+    double result;
+    ts.symbol = create_token();
+    if (ts.symbol.type == number)
+    {
+        result = ts.symbol.value;
+        ts.symbol = create_token();
+        return result;
+    }
+    else if (ts.symbol.type == '(')
+    {
+        result = second_order();
+        if (ts.symbol.type != ')')
+        {
+            std::cout << "Error, missing ')'" << std::endl;
+            return -1;
+        }
+        ts.symbol = create_token();
+        return result;
+    }
     return ts.symbol.value;
 }
 
-// this function evaluates the first order ops, * and /
 double first_order()
 {
     double result;
-    double lhs = ts.symbol.value;
+    double lhs = primary();
 
     if (ts.symbol.type == '*')
     {
-        ts.symbol = create_token();
-        char_to_num();
-        result = lhs * ts.symbol.value;
-        ts.symbol.value = result;
+        result = lhs * first_order();
         return result;
     }
     else if (ts.symbol.type == '/')
     {
-        ts.symbol = create_token();
-        char_to_num();
-        return lhs / ts.symbol.value;
+        result = lhs / first_order();
+        return result;
     }
-    return second_order();
+    return lhs;
 }
 
 double second_order()
 {
-    double lhs = ts.symbol.value;
+    double lhs = first_order();
     double result;
 
     if (ts.symbol.type == '+')
     {
-        ts.symbol = create_token();
-        char_to_num();
-        if (ts.symbol.type == '+' || ts.symbol.type == '-')
-        {
-            ts.symbol.value = lhs + ts.symbol.value;
-            return ts.symbol.value;
-        }
-        result = lhs + first_order();
-        ts.symbol.value = result;
+        result = lhs + second_order();
         return result;
     }
     if (ts.symbol.type == '-')
     {
-        ts.symbol = create_token();
-        char_to_num();
-        if (ts.symbol.type == '+' || ts.symbol.type == '-')
-        {
-            ts.symbol.value = lhs - ts.symbol.value;
-            return ts.symbol.value;
-        }
-        ts.symbol.value = lhs - first_order();
-        return ts.symbol.value;
+        result = lhs - second_order();
+        return result;
     }
-    return primary();
-}
-
-double evaluate()
-{
-    double result;
-    while (ts.symbol.type != '=' && ts.symbol.type != 'q')
-    {
-        result = first_order();
-    }
-    return result;
+    return lhs;
 }
 
 int main()
@@ -160,11 +134,11 @@ int main()
 
     while (true)
     {
-        ts.symbol = create_token();
-        result = evaluate();
+        result = second_order();
         if (ts.symbol.type == 'q')
             break;
-        std::cout << result << std::endl;
+        if (ts.symbol.type == '=')
+            std::cout << result << std::endl;
     }
     return 0;
 }
