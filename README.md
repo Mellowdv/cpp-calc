@@ -7,23 +7,15 @@
 #						       						   #
 ########################################################
 
-The basic grammar:
-	1. Evaluate ()
-	2. Evaluate * and /
-	3. Evaluate + and -
+The grammar:
 
-# usually this hierarchy is written in reverse order, but I find this more intuitive at the moment
-More advanced:
 	1. Primaries:
 		numbers, ()
 	2. Terms:
 		primary
-		term '*' term
-		term '/' term
+		term '*' primary
+		term '/' primary
 	3. Expressions:
 		term
-		expression '+' expression
-		expression '-' expression
-		
-		
-# this is a test commit
+		expression '+' term
+		expression '-' term
