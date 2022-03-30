@@ -1,21 +1,14 @@
-########################################################
-#						       						   #
-#						       						   #
-#   This is going to be a calculator project using     #
-#   basic lexical analysis			       			   #
-#						       						   #
-#						       						   #
-########################################################
+This simple calculator project is meant as an exercise to learn about lexical analysis.
 
-The grammar:
+The grammar being implemented:
 
-	1. Primaries:
-		numbers, ()
+	1. Expressions:
+		term
+		expression '+' term
+		expression '-' term
 	2. Terms:
 		primary
 		term '*' primary
 		term '/' primary
-	3. Expressions:
-		term
-		expression '+' term
-		expression '-' term
+	3. Primaries:
+		numbers, ()
