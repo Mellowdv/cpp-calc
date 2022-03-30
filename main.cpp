@@ -88,6 +88,8 @@ double primary()
         ts.symbol = create_token();
         return result;
     }
+    else if (ts.symbol.type == '-')
+        return -primary();
     return ts.symbol.value;
 }
 
