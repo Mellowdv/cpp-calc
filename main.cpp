@@ -50,7 +50,7 @@ Token create_token()
             return Token(number, val);
             break;
         }
-        case '+': case '-': case '*': case '/': case '(': case ')':
+        case '+': case '-': case '*': case '/': case '(': case ')': case '%':
         {
             return Token(input, ts.symbol.value);
             break;
@@ -77,13 +77,16 @@ double primary()
         ts.symbol = create_token();
         return result;
     }
+    if (ts.symbol.type == '+')
+        return primary();
+    else if (ts.symbol.type == '-')
+        return -primary();
     else if (ts.symbol.type == '(')
     {
         result = second_order();
         if (ts.symbol.type != ')')
         {
-            std::cout << "Error, missing ')'" << std::endl;
-            return -1;
+            throw std::runtime_error("Error, missing ')'");
         }
         ts.symbol = create_token();
         return result;
@@ -105,7 +108,26 @@ double first_order()
     }
     else if (ts.symbol.type == '/')
     {
-        result = lhs / first_order();
+        double divisor = first_order();
+        if (divisor == 0)
+        {
+            throw std::runtime_error("Error, division by 0!");
+        }
+        else
+        {
+            result = lhs / divisor;
+            return result;    
+        }
+    }
+    else if (ts.symbol.type == '%')
+    {
+        int rhs;
+        rhs = static_cast<int>(first_order());
+        if (rhs == 0)
+        {
+            throw std::runtime_error("Error, division by 0!");
+        }
+        result = static_cast<int>(lhs) % rhs;
         return result;
     }
     return lhs;
@@ -136,11 +158,19 @@ int main()
 
     while (true)
     {
-        result = second_order();
-        if (ts.symbol.type == 'q')
+        std::cout << "> ";
+        try
+        {
+            result = second_order();
+            if (ts.symbol.type == 'q')
             break;
-        if (ts.symbol.type == '=')
+            if (ts.symbol.type == '=')
             std::cout << result << std::endl;
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
     }
     return 0;
 }
