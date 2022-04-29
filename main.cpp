@@ -57,6 +57,7 @@ Token TokenStream::get()
             break;
         }
         case '+': case '-': case '*': case '/': case '(': case ')': case '%':
+        case '{': case '}': case '!':
         {
             return Token(input);
             break;
@@ -68,8 +69,18 @@ Token TokenStream::get()
             return Token(input);
         }
         default:
+        {
             throw std::runtime_error("Bad token.");
+            break;
+        }
     }
+}
+
+int calculateFactorial(int n) {
+    if (n == 0)
+        return 1;
+    else
+        return n * calculateFactorial(n - 1);
 }
 
 TokenStream ts;
@@ -97,25 +108,51 @@ double primary()
         }
         return result;
     }
+    else if (t.type == '{')
+    {
+        result = second_order();
+        t = ts.get();
+        if (t.type != '}')
+        {
+            throw std::runtime_error("Error, expected '}'.");
+        }
+        return result;
+    }
     else
         throw std::runtime_error("Primary expected.");
 }
 
+double factorial() {
+
+    int lhs = primary();
+    Token t = ts.get();
+    if (t.type == '!')
+    {
+        lhs = calculateFactorial(lhs);
+        return lhs;
+    }
+    else
+    {
+        ts.putback(t);
+        return lhs;
+    }
+}
+
 double first_order()
 {
-    double lhs = primary();
+    double lhs = factorial();
 
     Token t = ts.get();
 
     while (true) {
         if (t.type == '*')
         {
-            lhs *= primary();
+            lhs *= factorial();
             t = ts.get();
         }
         else if (t.type == '/')
         {
-            double divisor = primary();
+            double divisor = factorial();
             if (divisor == 0)
             {
                 throw std::runtime_error("Error, division by 0!");
@@ -129,7 +166,7 @@ double first_order()
         else if (t.type == '%')
         {
             int rhs;
-            rhs = static_cast<int>(primary());
+            rhs = static_cast<int>(factorial());
             if (rhs == 0)
             {
                 throw std::runtime_error("Error, division by 0!");
