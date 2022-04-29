@@ -16,26 +16,32 @@ public:
     Token(char new_type, double new_value) : type(new_type), value(new_value) {}
     Token(char new_type) : type(new_type), value(0) {}
     Token() {}
-
-    void display_token()
-    {
-        if (type == number)
-            std::cout << value;
-        else
-            std::cout << type;
-    }
 };
 
 class TokenStream
 {
+private:
+    Token buffer;
+    bool full {false};
 public:
-    Token symbol;
+    Token get();
+    void putback(Token t);
 };
 
-TokenStream ts;
+void TokenStream::putback(Token t) {
+    if (full) throw std::runtime_error("Putback into a full buffer.");
+    buffer = t;
+    full = true;
+}
 
-Token create_token()
+Token TokenStream::get()
 {
+
+    if (full) {
+        full = false;
+        return buffer;
+    }
+
     char input;
     double val;
     std::cin >> input;
@@ -52,120 +58,133 @@ Token create_token()
         }
         case '+': case '-': case '*': case '/': case '(': case ')': case '%':
         {
-            return Token(input, ts.symbol.value);
+            return Token(input);
             break;
         }
         case '=':
-            return Token(print, ts.symbol.value);
+            return Token(print);
         case 'q':
         {
             return Token(input);
         }
         default:
-            break;
+            throw std::runtime_error("Bad token.");
     }
-    return Token(input);
 }
+
+TokenStream ts;
 
 double primary()
 {
     double result;
-    ts.symbol = create_token();
-    if (ts.symbol.type == number)
+    Token t = ts.get();
+    if (t.type == number)
     {
-        result = ts.symbol.value;
-        ts.symbol = create_token();
+        result = t.value;
         return result;
     }
-    if (ts.symbol.type == '+')
+    else if (t.type == '+')
         return primary();
-    else if (ts.symbol.type == '-')
+    else if (t.type == '-')
         return -primary();
-    else if (ts.symbol.type == '(')
+    else if (t.type == '(')
     {
         result = second_order();
-        if (ts.symbol.type != ')')
+        t = ts.get();
+        if (t.type != ')')
         {
             throw std::runtime_error("Error, missing ')'");
         }
-        ts.symbol = create_token();
         return result;
     }
-    else if (ts.symbol.type == '-')
-        return -primary();
-    return ts.symbol.value;
+    else
+        throw std::runtime_error("Primary expected.");
 }
 
 double first_order()
 {
-    double result;
     double lhs = primary();
 
-    if (ts.symbol.type == '*')
-    {
-        result = lhs * first_order();
-        return result;
-    }
-    else if (ts.symbol.type == '/')
-    {
-        double divisor = first_order();
-        if (divisor == 0)
+    Token t = ts.get();
+
+    while (true) {
+        if (t.type == '*')
         {
-            throw std::runtime_error("Error, division by 0!");
+            lhs *= primary();
+            t = ts.get();
         }
-        else
+        else if (t.type == '/')
         {
-            result = lhs / divisor;
-            return result;    
+            double divisor = primary();
+            if (divisor == 0)
+            {
+                throw std::runtime_error("Error, division by 0!");
+            }
+            else
+            {
+                lhs /= divisor;
+                t = ts.get();
+            }
+        }
+        else if (t.type == '%')
+        {
+            int rhs;
+            rhs = static_cast<int>(primary());
+            if (rhs == 0)
+            {
+                throw std::runtime_error("Error, division by 0!");
+            }
+            lhs = static_cast<int>(lhs) % rhs;
+            t = ts.get();
+        }
+        else {
+            ts.putback(t);
+            return lhs;
         }
     }
-    else if (ts.symbol.type == '%')
-    {
-        int rhs;
-        rhs = static_cast<int>(first_order());
-        if (rhs == 0)
-        {
-            throw std::runtime_error("Error, division by 0!");
-        }
-        result = static_cast<int>(lhs) % rhs;
-        return result;
-    }
-    return lhs;
 }
 
 double second_order()
 {
     double lhs = first_order();
-    double result;
+    Token t = ts.get();
 
-    if (ts.symbol.type == '+')
-    {
-        result = lhs + second_order();
-        return result;
+    while (true) {
+        if (t.type == '+')
+        {
+            lhs += first_order();
+            t = ts.get();
+        }
+        else if (t.type == '-')
+        {
+            lhs -= first_order();
+            t = ts.get();
+        }
+        else {
+            ts.putback(t);
+            return lhs;
+        }
     }
-    if (ts.symbol.type == '-')
-    {
-        result = lhs - second_order();
-        return result;
-    }
-    return lhs;
 }
 
 int main()
 {
-    char input;
     double result;
+    std::cout << "> ";
 
-    while (true)
+    while (std::cin)
     {
-        std::cout << "> ";
+        Token t = ts.get();
         try
         {
+            if (t.type == 'q') break;
+            if (t.type == '=') { 
+                std::cout << result << std::endl << "> ";
+                continue;
+            }
+            else ts.putback(t);
             result = second_order();
-            if (ts.symbol.type == 'q')
-            break;
-            if (ts.symbol.type == '=')
-            std::cout << result << std::endl;
+
         }
         catch(const std::exception& e)
         {
