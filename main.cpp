@@ -58,6 +58,7 @@ double second_order();
 double handleSqrt();
 double handlePow();
 
+const bool newConst = true;
 const char number = '8';
 const char print = ';';
 const char quit = 'q';
@@ -69,6 +70,9 @@ const char squareRoot = 'S';
 const std::string sqrtKey = "sqrt";
 const char power = 'P';
 const std::string powerKey = "pow";
+const char declareConst = 'C';
+const std::string constKey = "const";
+
 
 class Token
 {
@@ -155,11 +159,12 @@ Token TokenStream::get()
             if (isalpha(input)) {
                 std::string s;
                 s += input;
-                while (std::cin.get(input) && (isalpha(input) || isdigit(input))) s += input;
+                while (std::cin.get(input) && (isalpha(input) || isdigit(input) || input == '_')) s += input;
                 std::cin.putback(input);
                 if (s == declKey) return Token{let};
                 if (s == sqrtKey) return Token{squareRoot};
                 if (s == powerKey) return Token{power};
+                if (s == constKey) return Token{declareConst};
                 return Token{name, s};
             }
             throw std::runtime_error("Bad token");
@@ -171,9 +176,10 @@ class Variable {
 public:
     std::string name;
     double value;
-    bool isConst;
+    bool isConst {false};
 
     Variable(std::string newName, double newValue) : name(newName), value(newValue) {}
+    Variable(std::string newName, double newValue, bool newIsConst) : name{newName}, value{newValue}, isConst{newIsConst} {}
 };
 
 std::vector<Variable> varTable;
@@ -188,8 +194,12 @@ double getValue(std::string s) {
 void setValue(std::string s, double d) {
     for(Variable& var: varTable) {
         if (var.name == s) {
-            var.value = d;
-            return;
+            if (var.isConst)
+                throw std::runtime_error("Unable to change a const's value");
+            else {
+                var.value = d;
+                return;
+            }
         }
     }
     throw std::runtime_error("Variable not found.");
@@ -203,13 +213,16 @@ bool isDeclared(std::string s) {
     return false;
 }
 
-double defineName(std::string s, double d) {
+double defineName(std::string s, double d, bool isConst = false) {
     if (isDeclared(s)) throw std::runtime_error("Declared twice.");
-    varTable.push_back(Variable(s, d));
+    if (isConst)
+        varTable.push_back(Variable(s, d, isConst));
+    else
+        varTable.push_back(Variable(s, d));
     return d;
 }
 
-double declaration() {
+double declaration(bool isConst = false) {
     Token t = ts.get();
     if (t.type != name) throw std::runtime_error("Expected a name.");
     std::string varName = t.name;
@@ -218,7 +231,10 @@ double declaration() {
     if (t2.type != '=') throw std::runtime_error("Expected assignement.");
     
     double d = second_order();
-    defineName(varName, d);
+    if (isConst)
+        defineName(varName, d, isConst);
+    else
+        defineName(varName, d);
     return d;
 }
 
@@ -229,17 +245,33 @@ int calculateFactorial(int n) {
         return n * calculateFactorial(n - 1);
 }
 
+double reassign(std::string varName) {
+    Token t = ts.get();
+    setValue(varName, t.value);
+    return t.value;
+}
 
 double primary()
 {
     double result;
+    std::string varName;
     Token t = ts.get();
+
     if (t.type == number) {
         result = t.value;
         return result;
     }
     else if (t.type == name) {
         result = getValue(t.name);
+        varName = t.name;
+        t = ts.get();
+
+        if (t.type == '=') {
+            result = reassign(varName);
+        }
+        else {
+            ts.putback(t);
+        }
         return result;
     }
     else if (t.type == '+')
@@ -376,6 +408,8 @@ double statement() {
     switch (t.type) {
     case let:
         return declaration();
+    case declareConst:
+        return declaration(newConst);
     case squareRoot: {
         return handleSqrt();
     }
