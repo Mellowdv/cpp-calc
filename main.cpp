@@ -121,14 +121,27 @@ void TokenStream::putback(Token t) {
     full = true;
 }
 
+Token handleStringInput(char& input) {
+    if (isalpha(input)) {
+        std::string s;
+        s += input;
+        while (std::cin.get(input) && (isalpha(input) || isdigit(input) || input == '_')) s += input;
+        std::cin.putback(input);
+        if (s == declKey) return Token{let};
+        if (s == sqrtKey) return Token{squareRoot};
+        if (s == powerKey) return Token{power};
+        if (s == constKey) return Token{declareConst};
+        return Token{name, s};
+    }
+    throw std::runtime_error("Bad token");
+}
+
 Token TokenStream::get()
 {
-
     if (full) {
         full = false;
         return buffer;
     }
-
     char input;
     double val;
     std::cin >> input;
@@ -155,20 +168,7 @@ Token TokenStream::get()
         case quit:
             return Token(quit);
         default:
-        {
-            if (isalpha(input)) {
-                std::string s;
-                s += input;
-                while (std::cin.get(input) && (isalpha(input) || isdigit(input) || input == '_')) s += input;
-                std::cin.putback(input);
-                if (s == declKey) return Token{let};
-                if (s == sqrtKey) return Token{squareRoot};
-                if (s == powerKey) return Token{power};
-                if (s == constKey) return Token{declareConst};
-                return Token{name, s};
-            }
-            throw std::runtime_error("Bad token");
-        }
+            return handleStringInput(input);
     }
 }
 
@@ -251,53 +251,66 @@ double reassign(std::string varName) {
     return t.value;
 }
 
+double handleNameTokens(Token& t) {
+        double result = getValue(t.name);
+        std::string varName = t.name;
+        t = ts.get();
+
+        if (t.type == '=')
+            result = reassign(varName);
+        else
+            ts.putback(t);
+        return result;
+}
+
+double handleBrackets(Token& t) {
+    double result;
+    switch (t.type) {
+        case '(': {
+            result = second_order();
+            t = ts.get();
+            if (t.type != ')')
+                throw std::runtime_error("Error, missing ')'");
+            return result;
+        }
+        case '{': {
+            result = second_order();
+            t = ts.get();
+            if (t.type != '}')
+                throw std::runtime_error("Error, expected '}'.");
+            return result;
+        }
+        default:
+            throw std::runtime_error("'(' or '{' expected.");
+    }
+}
+
 double primary()
 {
     double result;
     std::string varName;
     Token t = ts.get();
 
-    if (t.type == number) {
-        result = t.value;
-        return result;
-    }
-    else if (t.type == name) {
-        result = getValue(t.name);
-        varName = t.name;
-        t = ts.get();
-
-        if (t.type == '=') {
-            result = reassign(varName);
-        }
-        else {
-            ts.putback(t);
-        }
-        return result;
-    }
-    else if (t.type == '+')
+    switch (t.type) {
+    case number: 
+        return t.value;
+    case name:
+        return handleNameTokens(t);
+    case '+':
         return primary();
-    else if (t.type == '-')
+    case '-':
         return -primary();
-    else if (t.type == '(') {
-        result = second_order();
-        t = ts.get();
-        if (t.type != ')')
-            throw std::runtime_error("Error, missing ')'");
-        return result;
-    }
-    else if (t.type == '{') {
-        result = second_order();
-        t = ts.get();
-        if (t.type != '}')
-            throw std::runtime_error("Error, expected '}'.");
-        return result;
-    }
-    else if (t.type == squareRoot)
+    case '(':
+        return handleBrackets(t);
+    case '{':
+        return handleBrackets(t);
+    case squareRoot:
         return handleSqrt();
-    else if (t.type == power)
+    case power:
         return handlePow();
-    else
+    default:
         throw std::runtime_error("Primary expected.");
+    }
 }
 
 
@@ -305,16 +318,29 @@ double factorial() {
 
     double lhs = primary();
     Token t = ts.get();
-    if (t.type == '!')
-    {
+    if (t.type == '!') {
         lhs = calculateFactorial(lhs);
         return lhs;
     }
-    else
-    {
+    else {
         ts.putback(t);
         return lhs;
     }
+}
+
+double handleDivision(Token& t, double lhs) {
+    double divisor = factorial();
+    if (divisor == 0)
+        throw std::runtime_error("Error, division by 0!");
+    return lhs / divisor;
+}
+
+double handleModulo(Token& t, double lhs) {
+    int rhs;
+    rhs = static_cast<int>(factorial());
+    if (rhs == 0) 
+        throw std::runtime_error("Error, division by 0!");
+    return static_cast<int>(lhs) % rhs;
 }
 
 double first_order()
@@ -328,22 +354,11 @@ double first_order()
             t = ts.get();
         }
         else if (t.type == '/') {
-            double divisor = factorial();
-            if (divisor == 0) {
-                throw std::runtime_error("Error, division by 0!");
-            }
-            else {
-                lhs /= divisor;
-                t = ts.get();
-            }
+            lhs = handleDivision(t, lhs);
+            t = ts.get();
         }
         else if (t.type == '%') {
-            int rhs;
-            rhs = static_cast<int>(factorial());
-            if (rhs == 0) {
-                throw std::runtime_error("Error, division by 0!");
-            }
-            lhs = static_cast<int>(lhs) % rhs;
+            lhs = handleModulo(t, lhs);
             t = ts.get();
         }
         else {
