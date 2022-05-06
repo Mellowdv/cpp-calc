@@ -6,26 +6,26 @@
 
 int calculateFactorial(int n);
 
-double statement() {
+double statement(TokenStream& ts) {
     Token t = ts.get();
     switch (t.type) {
     case let:
-        return declaration();
+        return declaration(ts);
     case declareConst:
-        return declaration(newConst);
+        return declaration(ts, newConst);
     case squareRoot: {
-        return handleSqrt();
+        return handleSqrt(ts);
     }
     case power: {
-        return handlePow();
+        return handlePow(ts);
     }
     default:
         ts.putback(t);
-        return second_order();
+        return second_order(ts);
     }
 }
 
-double primary()
+double primary(TokenStream& ts)
 {
     double result;
     std::string varName;
@@ -35,27 +35,27 @@ double primary()
     case number: 
         return t.value;
     case name:
-        return handleNameTokens(t);
+        return handleNameTokens(ts, t);
     case '+':
-        return primary();
+        return primary(ts);
     case '-':
-        return -primary();
+        return -primary(ts);
     case '(':
-        return handleBrackets(t);
+        return handleBrackets(ts, t);
     case '{':
-        return handleBrackets(t);
+        return handleBrackets(ts, t);
     case squareRoot:
-        return handleSqrt();
+        return handleSqrt(ts);
     case power:
-        return handlePow();
+        return handlePow(ts);
     default:
         throw std::runtime_error("Primary expected.");
     }
 }
 
-double factorial() {
+double factorial(TokenStream& ts) {
 
-    double lhs = primary();
+    double lhs = primary(ts);
     Token t = ts.get();
     if (t.type == '!') {
         lhs = calculateFactorial(lhs);
@@ -67,18 +67,18 @@ double factorial() {
     }
 }
 
-double second_order()
+double second_order(TokenStream& ts)
 {
-    double lhs = first_order();
+    double lhs = first_order(ts);
     Token t = ts.get();
 
     while (true) {
         if (t.type == '+') {
-            lhs += first_order();
+            lhs += first_order(ts);
             t = ts.get();
         }
         else if (t.type == '-') {
-            lhs -= first_order();
+            lhs -= first_order(ts);
             t = ts.get();
         }
         else {
@@ -88,22 +88,22 @@ double second_order()
     }
 }
 
-double first_order()
+double first_order(TokenStream& ts)
 {
-    double lhs = factorial();
+    double lhs = factorial(ts);
     Token t = ts.get();
 
     while (true) {
         if (t.type == '*') {
-            lhs *= factorial();
+            lhs *= factorial(ts);
             t = ts.get();
         }
         else if (t.type == '/') {
-            lhs = handleDivision(t, lhs);
+            lhs = handleDivision(ts, t, lhs);
             t = ts.get();
         }
         else if (t.type == '%') {
-            lhs = handleModulo(t, lhs);
+            lhs = handleModulo(ts, t, lhs);
             t = ts.get();
         }
         else {
@@ -113,7 +113,7 @@ double first_order()
     }
 }
 
-double declaration(bool isConst) {
+double declaration(TokenStream& ts, bool isConst) {
     Token t = ts.get();
     if (t.type != name) throw std::runtime_error("Expected a name.");
     std::string varName = t.name;
@@ -121,7 +121,7 @@ double declaration(bool isConst) {
     Token t2 = ts.get();
     if (t2.type != '=') throw std::runtime_error("Expected assignement.");
     
-    double d = second_order();
+    double d = second_order(ts);
     if (isConst)
         varTable.defineName(varName, d, isConst);
     else
@@ -144,7 +144,7 @@ Token handleStringInput(char& input) {
     throw std::runtime_error("Bad token");
 }
 
-double handleNameTokens(Token& t) {
+double handleNameTokens(TokenStream& ts, Token& t) {
         double result = varTable.getValue(t.name);
         std::string varName = t.name;
         t = ts.get();
@@ -156,18 +156,18 @@ double handleNameTokens(Token& t) {
         return result;
 }
 
-double handleBrackets(Token& t) {
+double handleBrackets(TokenStream& ts, Token& t) {
     double result;
     switch (t.type) {
         case '(': {
-            result = second_order();
+            result = second_order(ts);
             t = ts.get();
             if (t.type != ')')
                 throw std::runtime_error("Error, missing ')'");
             return result;
         }
         case '{': {
-            result = second_order();
+            result = second_order(ts);
             t = ts.get();
             if (t.type != '}')
                 throw std::runtime_error("Error, expected '}'.");
@@ -178,26 +178,26 @@ double handleBrackets(Token& t) {
     }
 }
 
-double handleDivision(Token& t, double lhs) {
-    double divisor = factorial();
+double handleDivision(TokenStream& ts, Token& t, double lhs) {
+    double divisor = factorial(ts);
     if (divisor == 0)
         throw std::runtime_error("Error, division by 0!");
     return lhs / divisor;
 }
 
-double handleModulo(Token& t, double lhs) {
+double handleModulo(TokenStream& ts, Token& t, double lhs) {
     int rhs;
-    rhs = static_cast<int>(factorial());
+    rhs = static_cast<int>(factorial(ts));
     if (rhs == 0) 
         throw std::runtime_error("Error, division by 0!");
     return static_cast<int>(lhs) % rhs;
 }
 
-double handleSqrt() {
+double handleSqrt(TokenStream& ts) {
     Token t = ts.get();
     if (t.type != '(') throw std::runtime_error("Expected '('");
 
-    double result = second_order();
+    double result = second_order(ts);
     if (result < 0) throw std::runtime_error("Sqrt is only available for n > 0");
 
     Token t2 = ts.get();
@@ -206,15 +206,15 @@ double handleSqrt() {
     return sqrt(result);
 }
 
-double handlePow() {
+double handlePow(TokenStream& ts) {
     Token t = ts.get();
     if (t.type != '(') throw std::runtime_error("Expected '('");
 
-    double base = second_order();
+    double base = second_order(ts);
     Token t2 = ts.get();
     if (t2.type != ',') throw std::runtime_error("Expected ','");
 
-    double exponent = static_cast<int>(second_order());
+    double exponent = static_cast<int>(second_order(ts));
     double result = pow(base, exponent);
 
     Token t3 = ts.get();
@@ -228,7 +228,7 @@ void cleanUp() {
     ts.ignore(print);
 }
 
-void calculate() {
+void calculate(TokenStream& ts) {
     double result;
     while (std::cin)
     {
@@ -244,7 +244,7 @@ void calculate() {
                 std::cout << prompt;
             }
             else ts.putback(t);
-            result = statement();
+            result = statement(ts);
 
         }
         catch(const std::exception& e) {

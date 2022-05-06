@@ -102,7 +102,7 @@ int main()
         varTable.defineName("e", 2.7182818284);
         varTable.defineName("k", 1000);
         std::cout << prompt;
-        calculate();
+        calculate(ts);
         return 0;
     }
     catch (std::runtime_error& e) {
