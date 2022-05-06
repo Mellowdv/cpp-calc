@@ -22,8 +22,9 @@ double handleModulo(Token& t, double lhs);
 double handleSqrt();
 double handlePow();
 
-// main calculation loop and error clean up
+// main calculation loop, error clean up and help
 void calculate();
 void cleanUp();
+void printHelp();
 
 #endif

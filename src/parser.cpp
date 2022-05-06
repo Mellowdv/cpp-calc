@@ -235,17 +235,34 @@ void calculate() {
         Token t = ts.get();
         try {
             if (t.type == quit) break;
-            if (t.type == print) { 
+            if (t.type == print) {
                 std::cout << result << std::endl << prompt;
                 continue;
+            }
+            else if (t.type == help) {
+                printHelp();
+                std::cout << prompt;
             }
             else ts.putback(t);
             result = statement();
 
         }
         catch(const std::exception& e) {
-            std::cerr << e.what() << '\n';
+            std::cerr << e.what() << '\n' << prompt;
             cleanUp();
         }
     }
+}
+
+void printHelp() {
+    std::cout << "Welcome to the calculator.\n\tHOW TO:\n";
+    std::cout << "To calculate the result of your input end it with ';' symbol and press Return (Enter).\n";
+    std::cout << "The calculator provides all basic operations: -, +, /, * and %.\n";
+    std::cout << "The order of operations is PEMDAS.\n";
+    std::cout << "There is also a factorial function, used with x!, its precedence is higher than multi/division.\n";
+    std::cout << "Parentheses (both () and {}) are available to control the order.\n";
+    std::cout << "Functions sqrt(n) and pow(m,i), where n is > 0 and i is an integer are available.\n";
+    std::cout << "User defined variables can be declared with 'let variable_name = value'.\n";
+    std::cout << "User defined variable values can be reassigned using 'variable_name = new value'.\n";
+    std::cout << "User defined variables can be used in calculation by simply using 'variable_name' instead of a number.\n";
 }

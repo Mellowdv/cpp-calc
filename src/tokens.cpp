@@ -55,6 +55,8 @@ Token TokenStream::get()
             return Token(print);
         case quit:
             return Token(quit);
+        case help: case HELP:
+            return Token(help);
         default:
             return handleStringInput(input);
     }

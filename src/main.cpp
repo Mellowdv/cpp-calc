@@ -10,15 +10,39 @@
     Grammar for Input:
 
     Statement:
-        Second Order (+/-)
+        Second Order'Print'
+        Second Order
+        Declaration
+        Reassignment
+        Power
+        Square Root
         Print
         Quit
+        Help
+
+    Declaration:
+        'let' name '=' Second Order'Print'
+        'const' name '=' Second Order'Print'
+
+    Reassignment:
+        name '=' Second Order'Print'
+
+    Power:
+        pow(Primary, Primary)
+        pow(Primary, Primary)'Print'
+
+    Square Root:
+        sqrt(Primary)
+        sqrt(Primary)'Print'
 
     Print:
-        =
+        ;
     
     Quit:
         q
+
+    Help:
+        h or H
 
     Second Order:
         First Order
@@ -33,15 +57,19 @@
     
     Factorial:
         Primary
-        Primary '!'
+        Primary'!'
     
     Primary:
+        Variable
         Number
         ( Second Order )
         { Second Order }
         '-' Primary
         '+' Primary
     
+    Variable:
+        Name
+        
     Number:
         Floating point numerals
 
@@ -67,6 +95,8 @@ int calculateFactorial(int n) {
 
 int main()
 {
+    std::cout << "For help please input 'h' or 'H' followed by Enter.\n";
+    std::cout << "To quit please input 'q' followed by Enter.\n";
     try {
         varTable.defineName("pi", 3.1415926535);
         varTable.defineName("e", 2.7182818284);
