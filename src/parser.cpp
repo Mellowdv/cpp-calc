@@ -25,7 +25,7 @@ double statement(TokenStream& ts) {
     }
 }
 
-double primary(TokenStream& ts)
+double primary(TokenStream& ts, bool isReading)
 {
     double result;
     std::string varName;
@@ -48,6 +48,8 @@ double primary(TokenStream& ts)
         return handleSqrt(ts);
     case power:
         return handlePow(ts);
+    case fromFile: {
+    }
     default:
         throw std::runtime_error("Primary expected.");
     }
@@ -139,6 +141,8 @@ Token handleStringInput(char& input) {
         if (s == sqrtKey) return Token{squareRoot};
         if (s == powerKey) return Token{power};
         if (s == constKey) return Token{declareConst};
+        if (s == fromKey) return Token{fromFile};
+        if (s == toKey) return Token{toFile};
         return Token{name, s};
     }
     throw std::runtime_error("Bad token");

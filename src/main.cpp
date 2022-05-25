@@ -84,6 +84,8 @@
 
 TokenStream ts;
 SymbolTable varTable;
+bool isReading;
+bool isWriting;
 
 // helper function for calculating factorials
 int calculateFactorial(int n) {

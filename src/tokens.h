@@ -16,6 +16,10 @@ const char power = 'P';
 const std::string powerKey = "pow";
 const char declareConst = 'C';
 const std::string constKey = "const";
+const char fromFile = 'f';
+const std::string fromKey = "from";
+const char toFile = 't';
+const std::string toKey = "to";
 
 class Token
 {
@@ -42,5 +46,9 @@ public:
 
 // Global variable used for all tokenstream operations.
 extern TokenStream ts;
+
+// Global variables for reading and writing from files
+extern bool isReading;
+extern bool isWriting;
 
 #endif
