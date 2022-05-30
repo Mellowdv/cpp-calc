@@ -78,6 +78,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 #include "parser.h"
 #include "variables.h"
 #include "tokens.h"
@@ -86,6 +87,7 @@ TokenStream ts;
 SymbolTable varTable;
 bool isReading;
 bool isWriting;
+std::ifstream instructions;
 
 // helper function for calculating factorials
 int calculateFactorial(int n) {
@@ -105,14 +107,17 @@ int main()
         varTable.defineName("k", 1000);
         std::cout << prompt;
         calculate(ts);
+        instructions.close();
         return 0;
     }
     catch (std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
+        instructions.close();
         return 1;
     }
     catch (...) {
         std::cerr << "Exception" << std::endl;
+        instructions.close();
         return 2; 
     }
 }

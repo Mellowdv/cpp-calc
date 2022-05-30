@@ -1,6 +1,7 @@
 #include "tokens.h"
 #include "parser.h"
 #include <iostream>
+#include <fstream>
 
 void  TokenStream::ignore(char c) {
     
@@ -26,13 +27,28 @@ void TokenStream::putback(Token t) {
 
 Token TokenStream::get()
 {
+    if (instructions.is_open() && instructions.eof()) {
+        try {
+            instructions.close();
+            isReading = false;
+            std::cout << "File read completed." << std::endl;
+        }
+        catch(std::exception& e) {
+            std::cerr << "Error: " << e.what();
+        }
+    }
     if (full) {
         full = false;
         return buffer;
     }
     char input;
     double val;
-    std::cin >> input;
+
+    if (isReading) {
+        instructions >> input;        
+    }
+    else
+        std::cin >> input;
 
     switch (input)
     {
@@ -40,8 +56,14 @@ Token TokenStream::get()
         case '0': case '1': case '2': case '3': case '4': case '5':
         case '6': case '7': case '8': case '9':
         {
-            std::cin.putback(input);
-            std::cin >> val;
+            if (isReading) {
+                instructions.putback(input);
+                instructions >> val;    
+            }
+            else {
+                std::cin.putback(input);
+                std::cin >> val;
+            }
             return Token(number, val);
         }
         case '+': case '-': 
@@ -57,6 +79,8 @@ Token TokenStream::get()
             return Token(quit);
         case help: case HELP:
             return Token(help);
+        case '\0':
+            return Token(input);
         default:
             return handleStringInput(input);
     }

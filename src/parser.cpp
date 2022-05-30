@@ -2,6 +2,7 @@
 #include "tokens.h"
 #include "variables.h"
 #include <iostream>
+#include <fstream>
 #include <cmath>
 
 int calculateFactorial(int n);
@@ -25,7 +26,7 @@ double statement(TokenStream& ts) {
     }
 }
 
-double primary(TokenStream& ts, bool isReading)
+double primary(TokenStream& ts)
 {
     double result;
     std::string varName;
@@ -49,7 +50,11 @@ double primary(TokenStream& ts, bool isReading)
     case power:
         return handlePow(ts);
     case fromFile: {
+        return handleFileRead(ts);
     }
+    // hack, trying to compensate for end of file, but it works?
+    case '\0':
+        return 1;
     default:
         throw std::runtime_error("Primary expected.");
     }
@@ -135,8 +140,15 @@ Token handleStringInput(char& input) {
     if (isalpha(input)) {
         std::string s;
         s += input;
-        while (std::cin.get(input) && (isalpha(input) || isdigit(input) || input == '_')) s += input;
-        std::cin.putback(input);
+
+        if (isReading) {
+            while (instructions >> input && (isalpha(input) || isdigit(input) || input == '_')) s += input;
+            instructions.putback(input);
+        }
+        else {
+            while (std::cin.get(input) && (isalpha(input) || isdigit(input) || input == '_')) s += input;
+            std::cin.putback(input);
+        }
         if (s == declKey) return Token{let};
         if (s == sqrtKey) return Token{squareRoot};
         if (s == powerKey) return Token{power};
@@ -145,7 +157,8 @@ Token handleStringInput(char& input) {
         if (s == toKey) return Token{toFile};
         return Token{name, s};
     }
-    throw std::runtime_error("Bad token");
+    else
+        throw std::runtime_error("Forbidden character in string");
 }
 
 double handleNameTokens(TokenStream& ts, Token& t) {
@@ -226,7 +239,26 @@ double handlePow(TokenStream& ts) {
     return result;
 }
 
+double handleFileRead(TokenStream& ts) {
+    Token t = ts.get();
 
+    if (t.type != name) {
+        throw std::runtime_error("File name expected!");
+    }
+    
+    try {
+        instructions.open(t.name + ".txt");
+        if (!(instructions.is_open())) {
+            std::cout << "Error opening file.\n";
+            return 0;
+        }
+        isReading = true;
+    }
+    catch(std::runtime_error& e) {
+        std::cerr << "Error: " << e.what();
+    }
+    return 0;
+}
 
 void cleanUp() {
     ts.ignore(print);
@@ -234,13 +266,17 @@ void cleanUp() {
 
 void calculate(TokenStream& ts) {
     double result;
-    while (std::cin)
+
+    while (std::cin || instructions.is_open())
     {
         Token t = ts.get();
         try {
             if (t.type == quit) break;
             if (t.type == print) {
-                std::cout << result << std::endl << prompt;
+                if (instructions.is_open())
+                    std::cout << result << "\n";
+                else
+                    std::cout << result << std::endl << prompt;
                 continue;
             }
             else if (t.type == help) {
@@ -249,7 +285,6 @@ void calculate(TokenStream& ts) {
             }
             else ts.putback(t);
             result = statement(ts);
-
         }
         catch(const std::exception& e) {
             std::cerr << e.what() << '\n' << prompt;
