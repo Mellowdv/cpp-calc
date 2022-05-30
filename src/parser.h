@@ -24,6 +24,8 @@ double handlePow(TokenStream& ts);
 
 // file reading and writing
 double handleFileRead(TokenStream& ts);
+double handleFileWrite(TokenStream& ts);
+double finishWriting(TokenStream& ts);
 
 // main calculation loop, error clean up and help
 void calculate(TokenStream& ts);
@@ -31,5 +33,6 @@ void cleanUp();
 void printHelp();
 
 extern std::ifstream instructions;
+extern std::ofstream results;
 
 #endif

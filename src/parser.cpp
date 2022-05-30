@@ -52,6 +52,12 @@ double primary(TokenStream& ts)
     case fromFile: {
         return handleFileRead(ts);
     }
+    case toFile: {
+        return handleFileWrite(ts);
+    }
+    case writeComplete: {
+        finishWriting(ts);
+    }
     // hack, trying to compensate for end of file, but it works?
     case '\0':
         return 1;
@@ -155,6 +161,7 @@ Token handleStringInput(char& input) {
         if (s == constKey) return Token{declareConst};
         if (s == fromKey) return Token{fromFile};
         if (s == toKey) return Token{toFile};
+        if (s == writeCompleteKey) return Token{writeComplete};
         return Token{name, s};
     }
     else
@@ -250,12 +257,54 @@ double handleFileRead(TokenStream& ts) {
         instructions.open(t.name + ".txt");
         if (!(instructions.is_open())) {
             std::cout << "Error opening file.\n";
-            return 0;
+            return -1;
         }
+        // check if the next token is a "to" token
+        t = ts.get();
+        if (t.type == toFile)
+            handleFileWrite(ts);
+        else
+            ts.putback(t);
         isReading = true;
+
     }
     catch(std::runtime_error& e) {
         std::cerr << "Error: " << e.what();
+    }
+    return 0;
+}
+
+double handleFileWrite(TokenStream& ts) {
+    Token t = ts.get();
+
+    if (t.type != name) {
+        throw std::runtime_error("File name expected!");
+    }
+
+    try {
+        results.open(t.name + ".txt", std::ofstream::app);
+        if (!(results.is_open())) {
+            std::cout << "Error opening file!";
+            return -1;
+        }
+        isWriting = true;
+    }
+    catch(std::runtime_error& e) {
+        std::cerr << "Error: " << e.what();
+    }
+    return 0;
+}
+
+double finishWriting(TokenStream& ts) {
+    if (!(results.is_open())) {
+        std::cout << "Error, expected open file";
+        return -1;
+    }
+    else {
+        results << "End of file write.";
+        results.close();
+        isWriting = false;
+        std::cout << "File write completed succesfully.\n";
     }
     return 0;
 }
@@ -274,9 +323,16 @@ void calculate(TokenStream& ts) {
             if (t.type == quit) break;
             if (t.type == print) {
                 if (instructions.is_open())
-                    std::cout << result << "\n";
+                    if (isWriting) {
+                        results << result << "\n";
+                    }
+                    else
+                        std::cout << result << "\n" << prompt;
                 else
-                    std::cout << result << std::endl << prompt;
+                    if (isWriting)
+                        results << result << "\n";
+                    else
+                        std::cout << result << std::endl << prompt;
                 continue;
             }
             else if (t.type == help) {

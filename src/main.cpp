@@ -88,6 +88,7 @@ SymbolTable varTable;
 bool isReading;
 bool isWriting;
 std::ifstream instructions;
+std::ofstream results;
 
 // helper function for calculating factorials
 int calculateFactorial(int n) {
@@ -100,6 +101,7 @@ int calculateFactorial(int n) {
 int main()
 {
     std::cout << "For help please input 'h' or 'H' followed by Enter.\n";
+    std::cout << "File writes always need to be completed using the 'wrc' command,\neven when using from <file> to <file>\n";
     std::cout << "To quit please input 'q' followed by Enter.\n";
     try {
         varTable.defineName("pi", 3.1415926535);
@@ -108,16 +110,19 @@ int main()
         std::cout << prompt;
         calculate(ts);
         instructions.close();
+        results.close();
         return 0;
     }
     catch (std::runtime_error& e) {
         std::cerr << e.what() << std::endl;
         instructions.close();
+        results.close();
         return 1;
     }
     catch (...) {
         std::cerr << "Exception" << std::endl;
         instructions.close();
+        results.close();
         return 2; 
     }
 }

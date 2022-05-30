@@ -20,6 +20,8 @@ const char fromFile = 'f';
 const std::string fromKey = "from";
 const char toFile = 't';
 const std::string toKey = "to";
+const char writeComplete = 'c';
+const std::string writeCompleteKey = "wrc";
 
 class Token
 {
